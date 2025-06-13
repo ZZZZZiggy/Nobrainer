@@ -113,7 +113,7 @@ function ChatPageContent() {
     } catch (error) {
       console.error("Error loading chats:", error);
     }
-  }, [currentChat]);
+  }, [currentChat, loadChat]);
 
   // Load chats on mount
   useEffect(() => {
@@ -170,10 +170,6 @@ function ChatPageContent() {
     } catch (error) {
       console.error("Error refreshing chat:", error);
     }
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const sendMessage = async () => {
