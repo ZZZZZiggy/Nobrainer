@@ -121,7 +121,7 @@ function ChatPageContent() {
     } catch (error) {
       console.error("Error loading chats:", error);
     }
-  }, [currentChat]);
+  }, [currentChat, loadChat]);
 
   // Load chats on mount
   useEffect(() => {
@@ -144,21 +144,6 @@ function ChatPageContent() {
   //   scrollToBottom();
   // }, [currentChat?.messages]);
 
-  // Refresh current chat periodically to ensure all messages are loaded - OPTIMIZED
-  useEffect(() => {
-    if (!currentChat) return;
-
-    // Set up a refresh interval for the current chat - increased interval for better performance
-    const refreshInterval = setInterval(() => {
-      if (currentChat && !isLoading) {
-        // Don't save to localStorage on periodic refreshes
-        refreshCurrentChat(currentChat.id);
-      }
-    }, 10000); // Refresh every 10 seconds instead of 3 for better performance
-
-    return () => clearInterval(refreshInterval);
-  }, [currentChat?.id, isLoading]);
-
   // Function to refresh current chat without updating localStorage - optimized with useCallback
   const refreshCurrentChat = useCallback(async (chatId: string) => {
     try {
@@ -180,9 +165,25 @@ function ChatPageContent() {
     }
   }, []);
 
-  const scrollToBottom = () => {
+  // Refresh current chat periodically to ensure all messages are loaded - OPTIMIZED
+  useEffect(() => {
+    if (!currentChat) return;
+
+    // Set up a refresh interval for the current chat - increased interval for better performance
+    const refreshInterval = setInterval(() => {
+      if (currentChat && !isLoading) {
+        // Don't save to localStorage on periodic refreshes
+        refreshCurrentChat(currentChat.id);
+      }
+    }, 10000); // Refresh every 10 seconds instead of 3 for better performance
+
+    return () => clearInterval(refreshInterval);
+  }, [currentChat?.id, isLoading, refreshCurrentChat]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, [currentChat?.messages]);
 
   const sendMessage = async () => {
     if (!message.trim() || isLoading) return;

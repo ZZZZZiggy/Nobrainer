@@ -36,7 +36,6 @@ export async function POST(request: NextRequest) {
 async function callRunPodAPI(message: string): Promise<string> {
   const runpodUrl = process.env.RUNPOD_ENDPOINT_URL;
   const runpodApiKey = process.env.RUNPOD_API_KEY;
-  const modelName = process.env.RUNPOD_MODEL_NAME || "llama2";
 
   if (!runpodUrl) {
     throw new Error("RUNPOD_ENDPOINT_URL is not configured");
