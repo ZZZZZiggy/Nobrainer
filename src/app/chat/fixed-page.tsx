@@ -291,7 +291,9 @@ function ChatPageContent() {
   };
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/login" });
+    // Sign out without redirect, then navigate to login manually
+    await signOut({ redirect: false });
+    router.push("/login");
   };
 
   if (status === "loading") {

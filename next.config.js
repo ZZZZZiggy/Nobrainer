@@ -1,13 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true, // 暂时忽略 ESLint 错误以测试 Vercel 部署
-    dirs: ["src/app", "src/components", "src/lib"],
+    ignoreDuringBuilds: false,
+    dirs: ["src/app", "src/components", "src/lib"], // Only lint these directories
   },
   typescript: {
-    ignoreBuildErrors: true, // 暂时忽略 TypeScript 错误以测试 Vercel 部署
+    ignoreBuildErrors: false,
   },
-  serverExternalPackages: ["@prisma/client"],
   experimental: {
     // Optimize bundle size
     optimizePackageImports: ["lucide-react"],
@@ -23,12 +22,6 @@ const nextConfig = {
         "**/*.wasm.js",
       ],
     };
-
-    // Externalize Prisma for serverless functions
-    if (isServer) {
-      config.externals.push("@prisma/client");
-    }
-
     return config;
   },
 };
