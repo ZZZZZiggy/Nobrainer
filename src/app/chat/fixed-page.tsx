@@ -113,7 +113,7 @@ function ChatPageContent() {
     } catch (error) {
       console.error("Error loading chats:", error);
     }
-  }, [currentChat]);
+  }, [loadChat]);
 
   // Load chats on mount
   useEffect(() => {
@@ -136,23 +136,8 @@ function ChatPageContent() {
   //   scrollToBottom();
   // }, [currentChat?.messages]);
 
-  // Refresh current chat periodically to ensure all messages are loaded
-  useEffect(() => {
-    if (!currentChat) return;
-
-    // Set up a refresh interval for the current chat
-    const refreshInterval = setInterval(() => {
-      if (currentChat && !isLoading) {
-        // Don't save to localStorage on periodic refreshes
-        refreshCurrentChat(currentChat.id);
-      }
-    }, 3000); // Refresh every 3 seconds
-
-    return () => clearInterval(refreshInterval);
-  }, [currentChat?.id, isLoading]);
-
   // Function to refresh current chat without updating localStorage
-  const refreshCurrentChat = async (chatId: string) => {
+  const refreshCurrentChat = useCallback(async (chatId: string) => {
     try {
       const response = await fetch(
         `/api/chat?chatId=${chatId}&t=${Date.now()}`,
@@ -170,11 +155,22 @@ function ChatPageContent() {
     } catch (error) {
       console.error("Error refreshing chat:", error);
     }
-  };
+  }, []);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  // Refresh current chat periodically to ensure all messages are loaded
+  useEffect(() => {
+    if (!currentChat) return;
+
+    // Set up a refresh interval for the current chat
+    const refreshInterval = setInterval(() => {
+      if (currentChat && !isLoading) {
+        // Don't save to localStorage on periodic refreshes
+        refreshCurrentChat(currentChat.id);
+      }
+    }, 3000); // Refresh every 3 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [currentChat?.id, isLoading, refreshCurrentChat]);
 
   const sendMessage = async () => {
     if (!message.trim() || isLoading) return;

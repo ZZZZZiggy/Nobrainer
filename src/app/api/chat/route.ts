@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       ? `I need help on a prompt about ${message}`
       : message;
 
-    const userMessage = await prisma.message.create({
+    await prisma.message.create({
       data: {
         chatId: chat.id,
         content: messageContent,
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     const llmResponse = await callRunPodAPI(message, chat.messages || []);
 
     // Save assistant response
-    const assistantMessage = await prisma.message.create({
+    await prisma.message.create({
       data: {
         chatId: chat.id,
         content: llmResponse,
@@ -122,12 +122,11 @@ export async function POST(request: NextRequest) {
 // Function to call RunPod LLM API
 async function callRunPodAPI(
   message: string,
-  chatHistory: any[]
+  chatHistory: { content: string; role: string }[]
 ): Promise<string> {
   try {
     const runpodUrl = process.env.RUNPOD_ENDPOINT_URL;
     const runpodApiKey = process.env.RUNPOD_API_KEY;
-    const modelName = process.env.RUNPOD_MODEL_NAME || "llama2";
 
     if (!runpodUrl) {
       // Fallback mock response if no RunPod API is configured
