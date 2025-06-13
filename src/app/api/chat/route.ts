@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
 // Function to call RunPod LLM API
 async function callRunPodAPI(
   message: string,
-  chatHistory: { role: string; content: string }[]
+  chatHistory: any[]
 ): Promise<string> {
   try {
     const runpodUrl = process.env.RUNPOD_ENDPOINT_URL;

@@ -1,0 +1,21 @@
+# Development files
+.env.local
+.env.example
+
+# Database files
+prisma/dev.db*
+
+# Test files
+test-*
+
+# Documentation
+README.md
+TROUBLESHOOTING.md
+VERCEL_DEPLOYMENT*.md
+SUPABASE_MIGRATION.md
+
+# Generated files that will be regenerated
+src/generated/prisma/libquery_engine-*
+
+# MacOS
+.DS_Store
