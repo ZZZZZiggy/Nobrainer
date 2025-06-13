@@ -81,7 +81,7 @@ function ChatPageContent() {
     }
   };
 
-  const loadChats = useCallback(async (skipAutoLoad = false) => {
+  const loadChats = useCallback(async () => {
     try {
       const response = await fetch("/api/chat", {
         cache: "no-store",
@@ -93,8 +93,8 @@ function ChatPageContent() {
         const chatsData = await response.json();
         setChats(chatsData);
 
-        // Only load a chat if no chat is currently loaded and skipAutoLoad is false
-        if (chatsData.length > 0 && !currentChat && !skipAutoLoad) {
+        // Only load a chat if no chat is currently loaded
+        if (chatsData.length > 0 && !currentChat) {
           // Try to get the last viewed chat ID from localStorage
           const lastViewedChatId = getLastViewedChat();
 
@@ -113,7 +113,7 @@ function ChatPageContent() {
     } catch (error) {
       console.error("Error loading chats:", error);
     }
-  }, [currentChat, loadChat]);
+  }, [currentChat]);
 
   // Load chats on mount
   useEffect(() => {
@@ -170,6 +170,10 @@ function ChatPageContent() {
     } catch (error) {
       console.error("Error refreshing chat:", error);
     }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const sendMessage = async () => {
@@ -247,12 +251,11 @@ function ChatPageContent() {
 
       if (response.ok) {
         const data = await response.json();
-        
-        // 如果已创建新聊天，先切换到它
+        await loadChats(); // 重新加载聊天列表
+
+        // 如果已创建新聊天，则加载它
         if (data.chatId) {
           await loadChat(data.chatId);
-          // 然后重新加载聊天列表以更新侧边栏，但跳过自动加载逻辑
-          await loadChats(true);
         } else {
           setCurrentChat(null);
         }

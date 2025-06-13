@@ -27,7 +27,6 @@ export default function RootLayout({
           name="description"
           content="AI-powered prompt optimization platform"
         />
-        <link rel="icon" href="/image.png" type="image/png" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-black text-gray-200 antialiased`}
