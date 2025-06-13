@@ -44,19 +44,11 @@ Vercel 会自动检测并部署，现在的构建流程：
 #### vercel.json
 ```json
 {
-  "version": 2,
-  "buildCommand": "prisma generate && next build",
-  "installCommand": "npm install",
-  "env": {
-    "PRISMA_GENERATE_DATAPROXY": "true"
-  },
-  "functions": {
-    "src/app/api/**/*.ts": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  "buildCommand": "prisma generate && next build"
 }
 ```
+
+> **注意**: 简化的配置避免了 "Function Runtimes must have a valid version" 错误
 
 #### package.json 脚本
 ```json
