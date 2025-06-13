@@ -1,103 +1,260 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [promptInput, setPromptInput] = useState("");
+  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
+  const router = useRouter();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const prompts = [
+    "Generate a prompt for a product launch announcement.",
+    "How to write a compelling prompt for a design brief?",
+    "Craft a prompt for startup pitch deck content.",
+    "Develop a research paper summary prompt.",
+    "Create a prompt for a game narrative concept.",
+    "Formulate a prompt for social media content ideas.",
+    "Write a prompt for a compelling blog post outline.",
+    "Suggest a prompt for a complex coding problem.",
+    "Design a prompt for a data analysis report.",
+    "Create a prompt that helps me get fit and healthy in 2 months.",
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPromptIndex((prev) => (prev + 1) % prompts.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [prompts.length]);
+
+  const handleSearch = () => {
+    const currentPrompt = promptInput.trim();
+    if (currentPrompt) {
+      router.push(`/chat?prompt=${encodeURIComponent(currentPrompt)}`);
+      setPromptInput("");
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  const handleFileUpload = () => {
+    // File upload functionality can be implemented here
+    console.log("File upload clicked");
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-gray-200">
+      {/* Page 1 - Main Landing */}
+      <div
+        id="page1"
+        className="flex-1 min-h-screen flex flex-col items-center justify-center py-16 px-4 sm:px-6 lg:px-8 bg-black text-gray-200 w-full"
+      >
+        <div className="max-w-3xl w-full text-center space-y-8">
+          <p className="text-lg text-gray-400 mb-6">Prompting starts here.</p>
+
+          <div className="relative w-11/12 max-w-2xl p-4 rounded-3xl border border-gray-700 bg-gray-900 shadow-lg focus-within:ring-2 focus-within:ring-blue-500 transition-all duration-200 ease-in-out mx-auto">
+            <textarea
+              value={promptInput}
+              onChange={(e) => setPromptInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={prompts[currentPromptIndex]}
+              className="w-full h-24 pt-2 pr-12 pl-2 text-base bg-transparent text-white focus:outline-none resize-none placeholder:text-left placeholder:text-sm"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+
+            <button
+              onClick={handleFileUpload}
+              className="absolute bottom-2 left-4 p-1.5 text-gray-500 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Import File"
+              title="Add photos and files"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </button>
+
+            <button
+              onClick={handleSearch}
+              className="absolute bottom-2 right-4 p-1.5 text-gray-500 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Search"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 10l7-7m0 0l7 7m-7-7v18"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <button className="px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-xs hover:bg-gray-700 hover:text-white transition-colors duration-200 flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-2 text-blue-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                />
+              </svg>
+              Trending
+            </button>
+            {[
+              "Drug discovery",
+              "Gaming character",
+              "Research buddy",
+              "Tutor",
+              "Cinematic Video",
+              "X-ray report",
+            ].map((tag) => (
+              <button
+                key={tag}
+                className="px-5 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-xs hover:bg-gray-700 hover:text-white transition-colors duration-200"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-10">
+            <a
+              href="#page2"
+              className="text-blue-400 hover:text-blue-200 text-base font-medium transition-colors duration-200"
+            >
+              Learn more &rarr;
+            </a>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+
+      {/* Page 2 - About Section */}
+      <div
+        id="page2"
+        className="min-h-screen flex flex-col items-center py-16 px-4 sm:px-6 lg:px-8 bg-black text-gray-200"
+      >
+        <div className="max-w-4xl w-full space-y-12 py-8">
+          <div className="mb-8 text-left">
+            <a
+              href="#page1"
+              className="text-blue-400 hover:text-blue-200 text-base font-medium transition-colors duration-200"
+            >
+              &larr; Back to Home
+            </a>
+          </div>
+
+          <section className="space-y-3">
+            <h2 className="text-2xl font-bold text-white mb-3">Overview</h2>
+            <p className="text-base leading-relaxed text-gray-400">
+              Beta is a model that helps you write better prompts for any
+              language model. It transforms simple ideas into precise,
+              structured, and effective instructions—so you can get better
+              results from AI systems like GPT, Claude, Gemini, or open-source
+              models.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-2xl font-bold text-white mb-3">What it does</h2>
+            <ul className="list-none space-y-2 text-base text-gray-400">
+              {[
+                "Generates optimized prompts from plain language",
+                "Explains what the prompt is doing—and why",
+                "Rates prompt quality on a 1–10 scale",
+                "Supports code, writing, strategy, research, and education",
+              ].map((item, index) => (
+                <li key={index} className="flex items-start">
+                  <span className="mr-2 text-white text-xl">&rarr;</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-2xl font-bold text-white mb-3">Example</h2>
+            <div className="bg-gray-900 p-6 rounded-lg shadow-lg border border-gray-700">
+              <p className="text-base text-gray-300 mb-4">
+                <span className="font-semibold text-white">You enter:</span>
+                <br />
+                <span className="font-mono bg-gray-800 text-gray-200 px-2.5 py-1 rounded-md inline-block mt-1.5 text-sm">
+                  &quot;Write an onboarding doc for a new engineer&quot;
+                </span>
+              </p>
+              <p className="text-base text-gray-300 mt-6">
+                <span className="font-semibold text-white">Beta suggests:</span>
+                <br />
+                <span className="block bg-gray-800 text-gray-200 p-3 rounded-md mt-1.5 leading-relaxed text-sm border-l-4 border-[#10A37F]">
+                  &quot;Create a structured onboarding checklist for a new
+                  backend engineer joining a remote startup. Include key tools,
+                  teammates, timelines, and codebase orientation.&quot;
+                </span>
+              </p>
+              <p className="text-right text-sm text-gray-500 mt-5">
+                <span className="font-bold text-[#10A37F]">Score: 9.3</span>
+              </p>
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-2xl font-bold text-white mb-3">Try it now</h2>
+            <p className="text-base leading-relaxed text-gray-400">
+              No account required. Public beta is live.
+            </p>
+            <div className="mt-4">
+              <Link
+                href="/login"
+                className="text-blue-400 hover:text-blue-200 text-base font-medium transition-colors duration-200 mr-4"
+              >
+                Sign In &rarr;
+              </Link>
+              <Link
+                href="/signup"
+                className="text-blue-400 hover:text-blue-200 text-base font-medium transition-colors duration-200"
+              >
+                Sign Up &rarr;
+              </Link>
+            </div>
+          </section>
+
+          <footer className="text-center pt-8 border-t border-gray-800 space-y-1.5">
+            <p className="text-sm text-gray-500">
+              Built by{" "}
+              <span className="font-bold text-white">NoBrainer LLMs</span>
+            </p>
+          </footer>
+        </div>
+      </div>
     </div>
   );
 }

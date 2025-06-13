@@ -1,0 +1,50 @@
+/* 全局滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(26, 26, 26, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(75, 75, 75, 0.5);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 100, 100, 0.8);
+}
+
+/* Firefox滚动条样式 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(75, 75, 75, 0.5) rgba(26, 26, 26, 0.5);
+}
+
+/* 聊天区域特定滚动条样式 */
+.scrollbar-custom::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background: rgba(80, 80, 80, 0.4);
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 100, 100, 0.6);
+}
+
+/* 滚动条仅在悬停时显示 */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(80, 80, 80, 0.4) transparent;
+}

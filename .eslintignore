@@ -1,0 +1,26 @@
+# Generated files
+src/generated/
+prisma/migrations/
+*.wasm.js
+**/wasm*.js
+**/runtime/
+
+# Build output
+.next/
+out/
+build/
+
+# Dependencies
+node_modules/
+
+# Database
+*.db
+*.db-journal
+
+# Environment files
+.env*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
