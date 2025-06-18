@@ -171,23 +171,35 @@ export default function Home() {
           </div>
 
           <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <button className="px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-xs hover:bg-gray-700 hover:text-white transition-colors duration-200 flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2 text-blue-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                />
-              </svg>
-              Trending
-            </button>
+            <div className="relative group perspective-1000">
+              <div className="relative transform-style-preserve-3d transition-transform duration-500 group-hover:rotate-y-180">
+                {/* 正面 */}
+                <button 
+                  disabled
+                  className="px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-xs flex items-center cursor-not-allowed opacity-50 backface-hidden"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-2 text-gray-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                    />
+                  </svg>
+                  Trending
+                </button>
+                {/* 背面 */}
+                <div className="absolute inset-0 px-3 py-1.5 rounded-lg border border-gray-600 bg-gray-700 text-xs flex items-center justify-center cursor-not-allowed transform rotate-y-180 backface-hidden">
+                  <span className="text-gray-300 font-medium">Coming Soon</span>
+                </div>
+              </div>
+            </div>
             {[
               "Drug discovery",
               "Gaming character",
@@ -196,12 +208,21 @@ export default function Home() {
               "Cinematic Video",
               "X-ray report",
             ].map((tag) => (
-              <button
-                key={tag}
-                className="px-5 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-xs hover:bg-gray-700 hover:text-white transition-colors duration-200"
-              >
-                {tag}
-              </button>
+              <div key={tag} className="relative group perspective-1000">
+                <div className="relative transform-style-preserve-3d transition-transform duration-500 group-hover:rotate-y-180">
+                  {/* 正面 */}
+                  <button
+                    disabled
+                    className="px-5 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-xs cursor-not-allowed opacity-50 text-gray-400 backface-hidden"
+                  >
+                    {tag}
+                  </button>
+                  {/* 背面 */}
+                  <div className="absolute inset-0 px-5 py-1.5 rounded-lg border border-gray-600 bg-gray-700 text-xs flex items-center justify-center cursor-not-allowed transform rotate-y-180 backface-hidden">
+                    <span className="text-gray-300 font-medium">Coming Soon</span>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
 

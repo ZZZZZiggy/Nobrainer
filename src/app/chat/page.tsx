@@ -105,26 +105,18 @@ function ChatPageContent() {
 
         // Only load a chat if no chat is currently loaded
         if (chatsData.length > 0 && !currentChat) {
-          // Priority 1: URL chatId parameter
+          // Try to get the last viewed chat ID from localStorage
+          const lastViewedChatId = getLastViewedChat();
+
+          // If we have a stored chat ID and it exists in the loaded chats, use it
           if (
-            urlChatId &&
-            chatsData.some((chat: Chat) => chat.id === urlChatId)
+            lastViewedChatId &&
+            chatsData.some((chat: Chat) => chat.id === lastViewedChatId)
           ) {
-            await loadChat(urlChatId);
-            // Clear the URL parameter after loading
-            router.replace("/chat", undefined);
+            await loadChat(lastViewedChatId);
           } else {
-            // Priority 2: Last viewed chat ID from localStorage
-            const lastViewedChatId = getLastViewedChat();
-            if (
-              lastViewedChatId &&
-              chatsData.some((chat: Chat) => chat.id === lastViewedChatId)
-            ) {
-              await loadChat(lastViewedChatId);
-            } else {
-              // Priority 3: Load the first chat in the list
-              await loadChat(chatsData[0].id);
-            }
+            // Otherwise, load the first chat in the list
+            await loadChat(chatsData[0].id);
           }
         }
       }
@@ -151,16 +143,16 @@ function ChatPageContent() {
 
   // Handle chatId from URL - for direct navigation to specific chat
   useEffect(() => {
-    if (urlChatId && session && chats.length > 0) {
-      // Check if the chat exists in the loaded chats
-      const chatExists = chats.some((chat: Chat) => chat.id === urlChatId);
-      if (chatExists && (!currentChat || currentChat.id !== urlChatId)) {
-        loadChat(urlChatId);
+    if (urlChatId && session) {
+      // Directly load the chat by ID, regardless of whether it's in the chat list yet
+      loadChat(urlChatId).then(() => {
+        // After loading the chat, also refresh the chat list to ensure it's included
+        loadChats();
         // Clear the URL parameter after loading
         router.replace("/chat", undefined);
-      }
+      });
     }
-  }, [urlChatId, session, chats, currentChat, loadChat, router]);
+  }, [urlChatId, session, loadChat, loadChats, router]);
 
   // Scroll to bottom when messages change - DISABLED
   // useEffect(() => {
