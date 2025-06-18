@@ -4,12 +4,24 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prisma = globalForPrisma.prisma ??
+export const prisma =
+  globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
     datasources: {
       db: {
-        url: process.env.DATABASE_URL,
+        // 强制在本地连接字符串里禁用 prepared statements
+        url: process.env.DATABASE_URL
+          ? process.env.DATABASE_URL +
+            (process.env.DATABASE_URL.includes("prepareThreshold")
+              ? ""
+              : process.env.DATABASE_URL.includes("?")
+              ? "&prepareThreshold=0"
+              : "?prepareThreshold=0")
+          : undefined,
       },
     },
   });

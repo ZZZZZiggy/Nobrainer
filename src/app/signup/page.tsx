@@ -47,7 +47,28 @@ export default function SignupPage() {
       const registerData = await registerResponse.json();
 
       if (!registerResponse.ok) {
-        throw new Error(registerData.error || "Registration failed");
+        // 根据不同状态码显示不同错误信息
+        let errorMessage = "Registration failed";
+
+        if (registerResponse.status === 400) {
+          if (registerData.error?.includes("already exists")) {
+            errorMessage =
+              "This email is already registered. Please try logging in instead.";
+          } else if (registerData.error?.includes("required")) {
+            errorMessage = "Please fill in all required fields.";
+          } else {
+            errorMessage =
+              registerData.error ||
+              "Invalid input. Please check your information.";
+          }
+        } else if (registerResponse.status === 500) {
+          errorMessage = "Server error. Please try again later.";
+        } else {
+          errorMessage =
+            registerData.error || "Registration failed. Please try again.";
+        }
+
+        throw new Error(errorMessage);
       }
 
       // Then, sign them in
