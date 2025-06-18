@@ -7,6 +7,7 @@ import Link from "next/link";
 export default function Home() {
   const [promptInput, setPromptInput] = useState("");
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const prompts = [
@@ -30,11 +31,44 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [prompts.length]);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const currentPrompt = promptInput.trim();
-    if (currentPrompt) {
-      router.push(`/chat?prompt=${encodeURIComponent(currentPrompt)}`);
-      setPromptInput("");
+    if (currentPrompt && !isLoading) {
+      setIsLoading(true);
+      try {
+        // 直接创建新聊天并发送消息
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: currentPrompt,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // 跳转到新创建的聊天，传递聊天 ID
+          if (data.chatId) {
+            router.push(`/chat?chatId=${data.chatId}`);
+          } else {
+            router.push(`/chat`);
+          }
+          setPromptInput("");
+        } else {
+          // 如果API调用失败，回退到原来的方式
+          router.push(`/chat?prompt=${encodeURIComponent(currentPrompt)}`);
+          setPromptInput("");
+        }
+      } catch (error) {
+        console.error("Error creating chat:", error);
+        // 如果出错，回退到原来的方式
+        router.push(`/chat?prompt=${encodeURIComponent(currentPrompt)}`);
+        setPromptInput("");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -92,23 +126,47 @@ export default function Home() {
 
             <button
               onClick={handleSearch}
-              className="absolute bottom-2 right-4 p-1.5 text-gray-500 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isLoading || !promptInput.trim()}
+              className="absolute bottom-2 right-4 p-1.5 text-gray-500 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Search"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 10l7-7m0 0l7 7m-7-7v18"
-                />
-              </svg>
+              {isLoading ? (
+                <svg
+                  className="h-5 w-5 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 10l7-7m0 0l7 7m-7-7v18"
+                  />
+                </svg>
+              )}
             </button>
           </div>
 

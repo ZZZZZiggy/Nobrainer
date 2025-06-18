@@ -69,16 +69,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Save user message with placeholder for first message
-    const isFirstMessage = !chat.messages || chat.messages.length === 0;
-    const messageContent = isFirstMessage
-      ? `I need help on a prompt about ${message}`
-      : message;
-
+    // Save user message (direct user input, no modification)
     await prisma.message.create({
       data: {
         chatId: chat.id,
-        content: messageContent,
+        content: message,
         role: "USER",
       },
     });
@@ -148,30 +143,19 @@ async function callOpenAIAPI(
       content: systemPrompt,
     });
 
-    // Check if this is the first message in the conversation
-    const isFirstMessage = !chatHistory || chatHistory.length === 0;
-
-    // Add placeholder as first user message if this is a new conversation
-    if (isFirstMessage) {
+    // Add chat history in chronological order
+    chatHistory.forEach((msg) => {
       conversationHistory.push({
-        role: "user",
-        content: `I need help on a prompt about ${message}`,
+        role: msg.role === "USER" ? "user" : "assistant",
+        content: msg.content,
       });
-    } else {
-      // Add chat history in chronological order
-      chatHistory.forEach((msg) => {
-        conversationHistory.push({
-          role: msg.role === "USER" ? "user" : "assistant",
-          content: msg.content,
-        });
-      });
+    });
 
-      // Add current user message
-      conversationHistory.push({
-        role: "user",
-        content: message,
-      });
-    }
+    // Add current user message
+    conversationHistory.push({
+      role: "user",
+      content: message,
+    });
 
     // OpenAI API request body
     const requestBody = {
