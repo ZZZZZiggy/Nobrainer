@@ -14,14 +14,24 @@ export const prisma =
     datasources: {
       db: {
         // 强制在本地连接字符串里禁用 prepared statements
-        url: process.env.DATABASE_URL
-          ? process.env.DATABASE_URL +
-            (process.env.DATABASE_URL.includes("prepareThreshold")
+        url: (() => {
+          const baseUrl = process.env.DATABASE_URL;
+          if (!baseUrl) return undefined;
+          
+          const finalUrl = baseUrl +
+            (baseUrl.includes("prepareThreshold")
               ? ""
-              : process.env.DATABASE_URL.includes("?")
+              : baseUrl.includes("?")
               ? "&prepareThreshold=0"
-              : "?prepareThreshold=0")
-          : undefined,
+              : "?prepareThreshold=0");
+              
+          // 调试日志 - 生产环境也打印，方便排查
+          console.log("🔍 Database URL processing:");
+          console.log("Original:", baseUrl?.replace(/:[^:@]*@/, ":***@"));
+          console.log("Final:", finalUrl?.replace(/:[^:@]*@/, ":***@"));
+          
+          return finalUrl;
+        })(),
       },
     },
   });
