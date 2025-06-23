@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
           messages: {
             orderBy: { createdAt: "asc" },
             // Load more messages for better conversation context
-            take: 20, // Increased from 10 to support longer conversations
+            take: 50, // Increased to support longer conversations
           },
         },
       });
@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 如果是创建空聊天的请求，直接返回，不发送消息
     if (createEmptyChat) {
       return NextResponse.json({
         chatId: chat.id,
@@ -70,16 +69,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Save user message with placeholder for first message
-    const isFirstMessage = !chat.messages || chat.messages.length === 0;
-    const messageContent = isFirstMessage
-      ? `I need help on a prompt about ${message}`
-      : message;
-
+    // Save user message (direct user input, no modification)
     await prisma.message.create({
       data: {
         chatId: chat.id,
-        content: messageContent,
+        content: message,
         role: "USER",
       },
     });
@@ -94,8 +88,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Call RunPod LLM API with chat history
-    const llmResponse = await callRunPodAPI(message, chat.messages || []);
+    // Call OpenAI API with chat history
+    const llmResponse = await callOpenAIAPI(message, chat.messages || []);
 
     // Save assistant response
     await prisma.message.create({
@@ -119,58 +113,56 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Function to call RunPod LLM API
-async function callRunPodAPI(
+// Function to call OpenAI API
+async function callOpenAIAPI(
   message: string,
   chatHistory: { content: string; role: string }[]
 ): Promise<string> {
   try {
-    const runpodUrl = process.env.RUNPOD_ENDPOINT_URL;
-    const runpodApiKey = process.env.RUNPOD_API_KEY;
+    const openaiApiKey = process.env.OPENAI_API_KEY;
 
-    if (!runpodUrl) {
-      // Fallback mock response if no RunPod API is configured
-      return `You said: "${message}". This is a mock response. Please configure your RunPod API in the environment variables.`;
+    console.log(
+      "🔍 API Key check:",
+      openaiApiKey ? `${openaiApiKey.substring(0, 10)}...` : "NOT FOUND"
+    );
+
+    if (!openaiApiKey) {
+      // Fallback mock response if no OpenAI API is configured
+      return `You said: "${message}". This is a mock response. Please configure your OpenAI API key in the environment variables.`;
     }
 
-    // Build conversation history similar to Python InteractiveChat class
+    // Get system prompt from environment or use default
+    const systemPrompt = process.env.SYSTEM_PROMPT;
+    console.log("System Prompt length:", process.env.SYSTEM_PROMPT?.length);
+    // Build conversation history
     const conversationHistory = [];
 
     // Add system message first
     conversationHistory.push({
       role: "system",
-      content:
-        "You are a helpful AI assistant. Provide clear, accurate, and helpful responses.",
+      content: systemPrompt,
     });
 
-    // Check if this is the first message in the conversation
-    const isFirstMessage = !chatHistory || chatHistory.length === 0;
-
-    // Add placeholder as first user message if this is a new conversation
-    if (isFirstMessage) {
+    // Add chat history in chronological order
+    chatHistory.forEach((msg) => {
       conversationHistory.push({
-        role: "user",
-        content: `I need help on a prompt about ${message}`,
+        role: msg.role === "USER" ? "user" : "assistant",
+        content: msg.content,
       });
-    } else {
-      // Add chat history in chronological order
-      chatHistory.forEach((msg) => {
-        conversationHistory.push({
-          role: msg.role === "USER" ? "user" : "assistant",
-          content: msg.content,
-        });
-      });
+    });
 
-      // Add current user message
-      conversationHistory.push({
-        role: "user",
-        content: message,
-      });
-    }
+    // Add current user message
+    conversationHistory.push({
+      role: "user",
+      content: message,
+    });
 
-    // Use standard OpenAI chat completion format
+    // OpenAI API request body
     const requestBody = {
+      model: process.env.OPENAI_MODEL || "gpt-3.5-turbo", // 可配置模型
       messages: conversationHistory,
+      temperature: parseFloat(process.env.OPENAI_TEMPERATURE || "0.7"),
+      max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS || "15000"),
     };
 
     console.log(
@@ -178,51 +170,48 @@ async function callRunPodAPI(
       JSON.stringify(conversationHistory, null, 2)
     );
 
-    // Using direct endpoint URL as provided in .env.local (already includes /generate)
-    const response = await fetch(runpodUrl, {
+    // Call OpenAI API
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": runpodApiKey || "", // Using x-api-key header format with fallback
+        Authorization: `Bearer ${openaiApiKey}`,
       },
       body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
       console.error(
-        `RunPod API error: ${response.status} ${response.statusText}`
+        `OpenAI API error: ${response.status} ${response.statusText}`,
+        errorText
       );
-      throw new Error(`RunPod API error: ${response.status}`);
+      throw new Error(
+        `OpenAI API error: ${response.status} - ${response.statusText}: ${errorText}`
+      );
     }
 
     const data = await response.json();
     console.log("📦 API Response:", JSON.stringify(data, null, 2));
 
-    // Handle different response formats from RunPod
+    // Extract response from OpenAI format
     let assistantResponse = "";
 
     if (data.choices && data.choices[0] && data.choices[0].message) {
       assistantResponse = data.choices[0].message.content;
-    } else if (data.response) {
-      assistantResponse = data.response;
-    } else if (data.text) {
-      assistantResponse = data.text;
     } else {
-      console.error("Unexpected RunPod response format:", data);
+      console.error("Unexpected OpenAI response format:", data);
       return "I received an unexpected response format. Please try again.";
     }
 
-    // Clean up the response (remove any unwanted prefixes or suffixes)
-    assistantResponse = assistantResponse
-      .replace(/^Assistant:\s*/i, "") // Remove "Assistant:" prefix if present
-      .replace(/^AI:\s*/i, "") // Remove "AI:" prefix if present
-      .trim();
+    // Clean up the response
+    assistantResponse = assistantResponse.trim();
 
     console.log("🤖 Final assistant response:", assistantResponse);
 
     return assistantResponse;
   } catch (error) {
-    console.error("RunPod API call failed:", error);
+    console.error("OpenAI API call failed:", error);
     // Return a fallback response
     return `I'm having trouble connecting to the AI service right now. Please try again later. Error: ${
       error instanceof Error ? error.message : "Unknown error"

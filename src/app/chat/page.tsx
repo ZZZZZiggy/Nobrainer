@@ -55,6 +55,8 @@ function ChatPageContent() {
 
   // Get initial prompt from URL params
   const initialPrompt = searchParams.get("prompt");
+  // Get chatId from URL params
+  const urlChatId = searchParams.get("chatId");
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -138,6 +140,19 @@ function ChatPageContent() {
       router.replace("/chat", undefined);
     }
   }, [initialPrompt, session, currentChat, router]);
+
+  // Handle chatId from URL - for direct navigation to specific chat
+  useEffect(() => {
+    if (urlChatId && session) {
+      // Directly load the chat by ID, regardless of whether it's in the chat list yet
+      loadChat(urlChatId).then(() => {
+        // After loading the chat, also refresh the chat list to ensure it's included
+        loadChats();
+        // Clear the URL parameter after loading
+        router.replace("/chat", undefined);
+      });
+    }
+  }, [urlChatId, session, loadChat, loadChats, router]);
 
   // Scroll to bottom when messages change - DISABLED
   // useEffect(() => {
@@ -560,32 +575,16 @@ function ChatPageContent() {
             </button>
 
             <div className="flex-1 flex items-center">
-              {/* Show prefix for new conversations */}
-              {!currentChat ||
-              (currentChat.messages && currentChat.messages.length === 0) ? (
-                <div className="flex items-center w-full">
-                  <span className="text-white font-bold mr-2 shrink-0">
-                    I need help on a prompt about
-                  </span>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Describe what you need..."
-                    className="flex-1 bg-transparent text-white placeholder-gray-500 focus:outline-none resize-none ml-1"
-                    rows={1}
-                  />
-                </div>
-              ) : (
+              <div className="flex items-center w-full">
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Continue the conversation..."
+                  placeholder="I need prompt about..."
                   className="flex-1 bg-transparent text-white placeholder-gray-400 focus:outline-none resize-none"
                   rows={1}
                 />
-              )}
+              </div>
             </div>
 
             <button
@@ -666,22 +665,7 @@ const MessageComponent = memo(
               </div>
             </div>
           )}
-          {msg.role === "USER" && (
-            <div className="text-sm">
-              {msg.content.startsWith("I need help on a prompt about ") ? (
-                <div>
-                  <span className="text-gray-400">
-                    I need help on a prompt about{" "}
-                  </span>
-                  <span>
-                    {msg.content.replace("I need help on a prompt about ", "")}
-                  </span>
-                </div>
-              ) : (
-                msg.content
-              )}
-            </div>
-          )}
+          {msg.role === "USER" && <div className="text-sm">{msg.content}</div>}
         </div>
       </div>
     );
