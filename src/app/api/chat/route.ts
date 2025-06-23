@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
           messages: {
             orderBy: { createdAt: "asc" },
             // Load more messages for better conversation context
-            take: 20, // Increased from 10 to support longer conversations
+            take: 50, // Increased to support longer conversations
           },
         },
       });
@@ -162,7 +162,7 @@ async function callOpenAIAPI(
       model: process.env.OPENAI_MODEL || "gpt-3.5-turbo", // 可配置模型
       messages: conversationHistory,
       temperature: parseFloat(process.env.OPENAI_TEMPERATURE || "0.7"),
-      max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS || "1000"),
+      max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS || "15000"),
     };
 
     console.log(

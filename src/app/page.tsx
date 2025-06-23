@@ -174,7 +174,7 @@ export default function Home() {
             <div className="relative group perspective-1000">
               <div className="relative transform-style-preserve-3d transition-transform duration-500 group-hover:rotate-y-180">
                 {/* 正面 */}
-                <button 
+                <button
                   disabled
                   className="px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-xs flex items-center cursor-not-allowed opacity-50 backface-hidden"
                 >
@@ -219,7 +219,9 @@ export default function Home() {
                   </button>
                   {/* 背面 */}
                   <div className="absolute inset-0 px-5 py-1.5 rounded-lg border border-gray-600 bg-gray-700 text-xs flex items-center justify-center cursor-not-allowed transform rotate-y-180 backface-hidden">
-                    <span className="text-gray-300 font-medium">Coming Soon</span>
+                    <span className="text-gray-300 font-medium">
+                      Coming Soon
+                    </span>
                   </div>
                 </div>
               </div>
