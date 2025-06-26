@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import "../scrollbar.css"; // 导入自定义滚动条样式
+import "../scrollbar.css";
 
 interface Message {
   id: string;
@@ -67,7 +67,8 @@ function ChatPageContent() {
     }
   }, [session, status, router]);
 
-  const loadChat = useCallback(async (chatId: string) => {
+  // Unified function to load chat with optional localStorage saving
+  const loadChat = useCallback(async (chatId: string, saveToHistory = true) => {
     try {
       // Use cache-busting query parameter and fetch options to prevent browser caching
       const response = await fetch(
@@ -83,14 +84,17 @@ function ChatPageContent() {
         const chatData = await response.json();
         setCurrentChat(chatData);
 
-        // Save the last viewed chat ID to localStorage
-        saveLastViewedChat(chatId);
+        // Optionally save the last viewed chat ID to localStorage
+        if (saveToHistory) {
+          saveLastViewedChat(chatId);
+        }
       }
     } catch (error) {
       console.error("Error loading chat:", error);
     }
   }, []);
 
+  // load chats and if there's a new chat,switch to it
   const loadChats = useCallback(async () => {
     try {
       const response = await fetch("/api/chat", {
@@ -154,32 +158,6 @@ function ChatPageContent() {
     }
   }, [urlChatId, session, loadChat, loadChats, router]);
 
-  // Scroll to bottom when messages change - DISABLED
-  // useEffect(() => {
-  //   scrollToBottom();
-  // }, [currentChat?.messages]);
-
-  // Function to refresh current chat without updating localStorage - optimized with useCallback
-  const refreshCurrentChat = useCallback(async (chatId: string) => {
-    try {
-      const response = await fetch(
-        `/api/chat?chatId=${chatId}&t=${Date.now()}`,
-        {
-          cache: "no-store",
-          headers: {
-            "Cache-Control": "no-cache",
-          },
-        }
-      );
-      if (response.ok) {
-        const chatData = await response.json();
-        setCurrentChat(chatData);
-      }
-    } catch (error) {
-      console.error("Error refreshing chat:", error);
-    }
-  }, []);
-
   // Refresh current chat periodically to ensure all messages are loaded - OPTIMIZED
   useEffect(() => {
     if (!currentChat) return;
@@ -188,12 +166,12 @@ function ChatPageContent() {
     const refreshInterval = setInterval(() => {
       if (currentChat && !isLoading) {
         // Don't save to localStorage on periodic refreshes
-        refreshCurrentChat(currentChat.id);
+        loadChat(currentChat.id, false);
       }
     }, 10000); // Refresh every 10 seconds instead of 3 for better performance
 
     return () => clearInterval(refreshInterval);
-  }, [currentChat?.id, isLoading, refreshCurrentChat]);
+  }, [currentChat?.id, isLoading, loadChat]);
 
   const sendMessage = async () => {
     if (!message.trim() || isLoading) return;
@@ -254,39 +232,35 @@ function ChatPageContent() {
 
   const createNewChat = async () => {
     try {
-      // 创建新的空白聊天
+      // Clear current chat immediately for better UX
+      setCurrentChat(null);
+      setMessage("");
+
+      // Create new empty chat
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: "New Chat", // 一个临时消息，创建聊天后会被替换
-          createEmptyChat: true, // 添加标志，表示只创建聊天而不发送消息
+          message: "New Chat",
+          createEmptyChat: true,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        await loadChats(); // 重新加载聊天列表
+        await loadChats(); // Reload chat list
 
-        // 如果已创建新聊天，则加载它
         if (data.chatId) {
           await loadChat(data.chatId);
-        } else {
-          setCurrentChat(null);
         }
       } else {
         console.error("Error creating new chat");
-        // 如果API调用失败，也清除当前聊天
-        setCurrentChat(null);
       }
     } catch (error) {
       console.error("Error creating new chat:", error);
-      setCurrentChat(null);
     }
-
-    setMessage("");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -437,13 +411,7 @@ function ChatPageContent() {
         <header className="bg-black bg-opacity-80 backdrop-blur-sm p-4 flex items-center justify-between border-b border-gray-700 sticky top-0 z-10">
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => {
-                setSidebarOpen(!sidebarOpen);
-                // Refresh current chat when toggling sidebar
-                if (currentChat) {
-                  loadChat(currentChat.id);
-                }
-              }}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-gray-400 hover:text-white text-xl border border-gray-500 rounded-md px-1 py-0.5"
               title="Toggle Sidebar"
             >
