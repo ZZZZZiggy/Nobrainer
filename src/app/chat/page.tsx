@@ -37,6 +37,7 @@ function ChatPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [isCreatingNewChat, setIsCreatingNewChat] = useState(false); // 🔧 新增状态
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Functions to store and retrieve last viewed chat ID
@@ -108,20 +109,32 @@ function ChatPageContent() {
           const chatsData = await response.json();
           setChats(chatsData);
 
+          // 🔧 如果正在创建新聊天，不要自动选择任何聊天
+          if (isCreatingNewChat) {
+            return;
+          }
+
           // Only auto-select a chat if requested and no chat is currently loaded
+          // 🔧 添加额外检查：确保不是在创建新聊天的过程中
           if (autoSelectChat && chatsData.length > 0 && !currentChat) {
             // Try to get the last viewed chat ID from localStorage
             const lastViewedChatId = getLastViewedChat();
 
-            // If we have a stored chat ID and it exists in the loaded chats, use it
+            // 🔧 只有在有有效的 lastViewedChatId 且该聊天确实存在时才自动加载
             if (
               lastViewedChatId &&
               chatsData.some((chat: Chat) => chat.id === lastViewedChatId)
             ) {
               await loadChat(lastViewedChatId);
-            } else {
-              // Otherwise, load the first chat in the list
-              await loadChat(chatsData[0].id);
+            } else if (chatsData.length > 0) {
+              // 🔧 如果没有上次查看的聊天或聊天不存在，加载最新的聊天
+              // 按更新时间排序，选择最新的
+              const sortedChats = [...chatsData].sort(
+                (a, b) =>
+                  new Date(b.updatedAt).getTime() -
+                  new Date(a.updatedAt).getTime()
+              );
+              await loadChat(sortedChats[0].id);
             }
           }
         }
@@ -129,15 +142,16 @@ function ChatPageContent() {
         console.error("Error loading chats:", error);
       }
     },
-    [loadChat, currentChat]
+    [loadChat, currentChat, isCreatingNewChat] // 🔧 添加依赖
   );
 
   // Load chats on mount
   useEffect(() => {
-    if (session) {
+    if (session && !isCreatingNewChat) {
+      console.log("🚀 Initial chats load");
       loadChats();
     }
-  }, [session, loadChats]);
+  }, [session, loadChats]); // 🔧 移除 isCreatingNewChat 避免循环
 
   // Handle initial prompt from URL
   useEffect(() => {
@@ -163,18 +177,19 @@ function ChatPageContent() {
 
   // Refresh current chat periodically to ensure all messages are loaded - OPTIMIZED
   useEffect(() => {
-    if (!currentChat) return;
+    if (!currentChat || isCreatingNewChat) return; // 🔧 创建新聊天时暂停轮询
 
     // Set up a refresh interval for the current chat - increased interval for better performance
     const refreshInterval = setInterval(() => {
-      if (currentChat && !isLoading) {
+      if (currentChat && !isLoading && !isCreatingNewChat) {
+        // 🔧 添加创建新聊天检查
         // Don't save to localStorage on periodic refreshes
         loadChat(currentChat.id, false);
       }
-    }, 10000); // Refresh every 10 seconds instead of 3 for better performance
+    }, 15000); // 🔧 增加到15秒，减少请求频率
 
     return () => clearInterval(refreshInterval);
-  }, [currentChat?.id, isLoading, loadChat]);
+  }, [currentChat?.id, isLoading, loadChat, isCreatingNewChat]); // 🔧 添加依赖
 
   const sendMessage = async () => {
     if (!message.trim() || isLoading) return;
@@ -214,17 +229,21 @@ function ChatPageContent() {
       if (response.ok) {
         const data = await response.json();
 
-        // Optimized: reduce API calls for better performance
+        console.log("📤 Message sent, response:", data);
+
+        // 🔧 优化：减少 API 调用，更智能的更新策略
         if (!currentChat || currentChat.id !== data.chatId) {
           // New chat created - update list without auto-selecting
+          console.log("🆕 New chat created, updating lists");
           await loadChats(false);
           await loadChat(data.chatId);
         } else {
-          // Existing chat - only reload current chat, skip chat list reload for better performance
-          await loadChat(currentChat.id);
+          // 🔧 现有聊天 - 只重新加载当前聊天，不刷新聊天列表
+          console.log("💬 Existing chat, reloading messages");
+          await loadChat(currentChat.id, false); // 不保存到历史
         }
       } else {
-        console.error("Error sending message");
+        console.error("Error sending message", response.status);
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -235,6 +254,12 @@ function ChatPageContent() {
 
   const createNewChat = async () => {
     try {
+      // 🔧 设置创建新聊天状态，防止其他操作干扰
+      setIsCreatingNewChat(true);
+
+      // 🔧 立即清空当前聊天，避免闪烁
+      setCurrentChat(null);
+
       // Create new empty chat
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -251,20 +276,28 @@ function ChatPageContent() {
         const data = await response.json();
 
         if (data.chatId) {
+          // 🔧 清除 localStorage 中的上次查看记录，避免自动加载旧聊天
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("lastViewedChatId");
+          }
+
           // Directly load the new chat without refreshing the entire chat list
           // The chat list will be updated when the user sends the first message
           await loadChat(data.chatId);
         } else {
-          // If no chatId returned, just clear current chat
-          setCurrentChat(null);
+          // If no chatId returned, keep current chat as null
+          console.warn("No chatId returned from API");
         }
       } else {
         console.error("Error creating new chat");
-        setCurrentChat(null);
+        // Keep currentChat as null (already set above)
       }
     } catch (error) {
       console.error("Error creating new chat:", error);
-      setCurrentChat(null);
+      // Keep currentChat as null (already set above)
+    } finally {
+      // 🔧 重置创建新聊天状态
+      setIsCreatingNewChat(false);
     }
   };
 
@@ -366,23 +399,28 @@ function ChatPageContent() {
 
             <button
               onClick={createNewChat}
-              className="text-gray-400 hover:text-white text-xl border border-gray-500 rounded-md px-2 py-1 flex-shrink-0 ml-2"
+              disabled={isCreatingNewChat} // 🔧 防止重复点击
+              className="text-gray-400 hover:text-white text-xl border border-gray-500 rounded-md px-2 py-1 flex-shrink-0 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
               title="New Chat"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 4.5v15m7.5-7.5h-15"
-                />
-              </svg>
+              {isCreatingNewChat ? ( // 🔧 创建中显示加载动画
+                <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4.5v15m7.5-7.5h-15"
+                  />
+                </svg>
+              )}
             </button>
           </div>
 
@@ -467,23 +505,28 @@ function ChatPageContent() {
             {!sidebarOpen && (
               <button
                 onClick={createNewChat}
-                className="text-gray-400 hover:text-white text-xl border border-gray-500 rounded-md px-2 py-1 flex-shrink-0 ml-2"
+                disabled={isCreatingNewChat} // 🔧 防止重复点击
+                className="text-gray-400 hover:text-white text-xl border border-gray-500 rounded-md px-2 py-1 flex-shrink-0 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="New Chat"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 4.5v15m7.5-7.5h-15"
-                  />
-                </svg>
+                {isCreatingNewChat ? ( // 🔧 创建中显示加载动画
+                  <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 4.5v15m7.5-7.5h-15"
+                    />
+                  </svg>
+                )}
               </button>
             )}
 
