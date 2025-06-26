@@ -95,39 +95,42 @@ function ChatPageContent() {
   }, []);
 
   // load chats and if there's a new chat,switch to it
-  const loadChats = useCallback(async () => {
-    try {
-      const response = await fetch("/api/chat", {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-        },
-      });
-      if (response.ok) {
-        const chatsData = await response.json();
-        setChats(chatsData);
+  const loadChats = useCallback(
+    async (autoSelectChat = true) => {
+      try {
+        const response = await fetch("/api/chat", {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+          },
+        });
+        if (response.ok) {
+          const chatsData = await response.json();
+          setChats(chatsData);
 
-        // Only load a chat if no chat is currently loaded
-        if (chatsData.length > 0 && !currentChat) {
-          // Try to get the last viewed chat ID from localStorage
-          const lastViewedChatId = getLastViewedChat();
+          // Only auto-select a chat if requested and no chat is currently loaded
+          if (autoSelectChat && chatsData.length > 0 && !currentChat) {
+            // Try to get the last viewed chat ID from localStorage
+            const lastViewedChatId = getLastViewedChat();
 
-          // If we have a stored chat ID and it exists in the loaded chats, use it
-          if (
-            lastViewedChatId &&
-            chatsData.some((chat: Chat) => chat.id === lastViewedChatId)
-          ) {
-            await loadChat(lastViewedChatId);
-          } else {
-            // Otherwise, load the first chat in the list
-            await loadChat(chatsData[0].id);
+            // If we have a stored chat ID and it exists in the loaded chats, use it
+            if (
+              lastViewedChatId &&
+              chatsData.some((chat: Chat) => chat.id === lastViewedChatId)
+            ) {
+              await loadChat(lastViewedChatId);
+            } else {
+              // Otherwise, load the first chat in the list
+              await loadChat(chatsData[0].id);
+            }
           }
         }
+      } catch (error) {
+        console.error("Error loading chats:", error);
       }
-    } catch (error) {
-      console.error("Error loading chats:", error);
-    }
-  }, [loadChat]);
+    },
+    [loadChat, currentChat]
+  );
 
   // Load chats on mount
   useEffect(() => {
@@ -150,8 +153,8 @@ function ChatPageContent() {
     if (urlChatId && session) {
       // Directly load the chat by ID, regardless of whether it's in the chat list yet
       loadChat(urlChatId).then(() => {
-        // After loading the chat, also refresh the chat list to ensure it's included
-        loadChats();
+        // After loading the chat, refresh the chat list without auto-selecting
+        loadChats(false);
         // Clear the URL parameter after loading
         router.replace("/chat", undefined);
       });
@@ -213,8 +216,8 @@ function ChatPageContent() {
 
         // Optimized: reduce API calls for better performance
         if (!currentChat || currentChat.id !== data.chatId) {
-          // New chat created
-          await loadChats();
+          // New chat created - update list without auto-selecting
+          await loadChats(false);
           await loadChat(data.chatId);
         } else {
           // Existing chat - only reload current chat, skip chat list reload for better performance
@@ -232,10 +235,6 @@ function ChatPageContent() {
 
   const createNewChat = async () => {
     try {
-      // Clear current chat immediately for better UX
-      setCurrentChat(null);
-      setMessage("");
-
       // Create new empty chat
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -250,16 +249,22 @@ function ChatPageContent() {
 
       if (response.ok) {
         const data = await response.json();
-        await loadChats(); // Reload chat list
 
         if (data.chatId) {
+          // Directly load the new chat without refreshing the entire chat list
+          // The chat list will be updated when the user sends the first message
           await loadChat(data.chatId);
+        } else {
+          // If no chatId returned, just clear current chat
+          setCurrentChat(null);
         }
       } else {
         console.error("Error creating new chat");
+        setCurrentChat(null);
       }
     } catch (error) {
       console.error("Error creating new chat:", error);
+      setCurrentChat(null);
     }
   };
 
